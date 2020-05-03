@@ -46,24 +46,34 @@ dataset.
 
 ## Libraries
 
-```{r echo = TRUE, results="hide", message=FALSE}
+
+```r
 library(dplyr)
 library(ggplot2)
 ```
 
 ## Loading and preprocessing the data
 
-```{r echo = TRUE}
+
+```r
 unzip("activity.zip")
 activityData<- read.csv("activity.csv", header= TRUE, sep = ",", colClasses=c("numeric", "character", "numeric"))
 activityData$date<- as.Date(activityData$date, format = "%Y-%m-%d")
 str(activityData)
 ```
 
+```
+## 'data.frame':	17568 obs. of  3 variables:
+##  $ steps   : num  NA NA NA NA NA NA NA NA NA NA ...
+##  $ date    : Date, format: "2012-10-01" "2012-10-01" ...
+##  $ interval: num  0 5 10 15 20 25 30 35 40 45 ...
+```
+
 ## What is mean total number of steps taken per day?
 
 #### Calculate the total number of steps taken per day  
-```{r echo=TRUE}
+
+```r
 sumSteps<- activityData %>% 
            filter(!is.na(steps)) %>% 
            group_by(date) %>% 
@@ -71,9 +81,21 @@ sumSteps<- activityData %>%
 head(sumSteps)
 ```
 
-#### Make a histogram of the total number of steps taken each day  
-```{r echo=TRUE}
+```
+## # A tibble: 6 x 2
+##   date       Sum_Steps
+##   <date>         <dbl>
+## 1 2012-10-02       126
+## 2 2012-10-03     11352
+## 3 2012-10-04     12116
+## 4 2012-10-05     13294
+## 5 2012-10-06     15420
+## 6 2012-10-07     11015
+```
 
+#### Make a histogram of the total number of steps taken each day  
+
+```r
 sumSteps %>% ggplot(aes(x = Sum_Steps)) + 
              geom_histogram(fill = "#69b3a2",color="#e9ecef", alpha=0.9, binwidth = 1000) + 
              xlab("Total Number of Steps per day") +
@@ -82,20 +104,23 @@ sumSteps %>% ggplot(aes(x = Sum_Steps)) +
              theme_bw()
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
+
 #### Calculate and report the mean and median of the total number of steps taken per day
 
-```{r echo=TRUE}
+
+```r
 steps_mean <- mean(sumSteps$Sum_Steps)
 steps_median <- median(sumSteps$Sum_Steps)
 ```
 
-The mean of the total number of steps taken per day is **`r format(steps_mean, scientific=FALSE)`** and median is **`r format(steps_median, scientific=FALSE)`**
+The mean of the total number of steps taken per day is **10766.19** and median is **10765**
 
 ## What is the average daily activity pattern?
 
 #### Aggregate intervals with the average number of steps taken, averaged across all days
-```{r echo=TRUE}
 
+```r
 steps_per_interval <- activityData %>% 
                       filter(!is.na(steps)) %>% 
                       group_by(interval) %>% 
@@ -103,7 +128,14 @@ steps_per_interval <- activityData %>%
 str(steps_per_interval)
 ```
 
-```{r echo=TRUE}
+```
+## Classes 'tbl_df', 'tbl' and 'data.frame':	288 obs. of  2 variables:
+##  $ interval  : num  0 5 10 15 20 25 30 35 40 45 ...
+##  $ Mean_Steps: num  1.717 0.3396 0.1321 0.1509 0.0755 ...
+```
+
+
+```r
 steps_per_interval %>% ggplot(aes(x=interval, y=Mean_Steps)) +   
                        geom_line(color = "black",size=1) +  
                        xlab("Interval") +
@@ -111,23 +143,27 @@ steps_per_interval %>% ggplot(aes(x=interval, y=Mean_Steps)) +
                        theme_bw()
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-7-1.png)<!-- -->
+
 #### 5-minute interval containing the maximum number of steps (averaged across all days)
 
-```{r echo=TRUE}
+
+```r
 max_point<- steps_per_interval[which.max(steps_per_interval$Mean_Steps),]
 ```
 
-The **`r max_point$interval`** interval has maximum **`r round(max_point$Mean_Steps)`** steps.
+The **835** interval has maximum **206** steps.
 
 ## Imputing missing values
 
 #### Number of missing values in the dataset
 
-```{r echo=TRUE}
+
+```r
 num_nas<-sum(!complete.cases(activityData))
 ```
 
-The total number of rows with NAs is **`r num_nas`**
+The total number of rows with NAs is **2304**
 
 #### Method for imputing missing step values
 
@@ -136,7 +172,8 @@ Missing step values were replaced by the mean number of steps taken for the corr
 
 #### Create new dataset using imputed values 
 
-```{r echo=TRUE}
+
+```r
 dataAgg<-aggregate(steps~interval,activityData,mean,na.rm=TRUE)
 data_imputed<-merge(activityData,dataAgg,by=c("interval"))
 data_imputed<-transform(data_imputed,steps.x = ifelse(is.na(steps.x),steps.y,steps.x))
@@ -147,14 +184,26 @@ data_imputed<-data_imputed[order(data_imputed$date, data_imputed$interval),]
 summary(data_imputed)
 ```
 
+```
+##     interval          steps             date           
+##  Min.   :   0.0   Min.   :  0.00   Min.   :2012-10-01  
+##  1st Qu.: 588.8   1st Qu.:  0.00   1st Qu.:2012-10-16  
+##  Median :1177.5   Median :  0.00   Median :2012-10-31  
+##  Mean   :1177.5   Mean   : 37.38   Mean   :2012-10-31  
+##  3rd Qu.:1766.2   3rd Qu.: 27.00   3rd Qu.:2012-11-15  
+##  Max.   :2355.0   Max.   :806.00   Max.   :2012-11-30
+```
+
 #### Aggregate steps by date
-```{r echo=TRUE}
+
+```r
 dataImputedAgg<-aggregate(steps~date, data_imputed, sum)
 ```
 
 #### Make a histogram of the total number of steps taken each day
 
-```{r echo=TRUE}
+
+```r
 ggplot(dataImputedAgg, aes(x = steps)) + 
        geom_histogram(fill = "#69b3a2",color="#e9ecef", alpha=0.9, binwidth = 1000) + 
        xlab("Total Number of Steps per day") +
@@ -162,24 +211,27 @@ ggplot(dataImputedAgg, aes(x = steps)) +
        theme_bw()
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
+
 #### Calculate and report the mean and median total number of steps taken per day  
-```{r echo=TRUE}
+
+```r
 step_mean_imputed<-mean(dataImputedAgg$steps)
 step_median_imputed<-median(dataImputedAgg$steps)
 ```
 
-The imputed dataset has mean value **`r format(step_mean_imputed, scientific=FALSE)`** and median **`r format(step_median_imputed, scientific=FALSE)`**  
+The imputed dataset has mean value **10765.64** and median **10762**  
 
 #### Do these values differ from the estimates from the first part of the assignment?
  
 Yes, these values do differ slightly.  
 
 - Before filling the data
-    1. Mean: **`r format(steps_mean, scientific=FALSE)`**  
-    2. Median: **`r format(steps_median, scientific=FALSE)`**  
+    1. Mean: **10766.19**  
+    2. Median: **10765**  
 - After filling the data 
-    1. Mean: **`r format(step_mean_imputed, scientific=FALSE)`**  
-    2. Median: **`r format(step_median_imputed, scientific=FALSE)`**  
+    1. Mean: **10765.64**  
+    2. Median: **10762**  
 
 #### What is the impact of imputing missing data on the estimates of the total daily number of steps?  
 As you can see from above, both mean value and median value has been slightly shifted. And accoring to both histogram, it seems that the impact of imputing missing values has increase our peak, but it's not affect negatively our predictions. 
@@ -187,8 +239,8 @@ As you can see from above, both mean value and median value has been slightly sh
 ## Are there differences in activity patterns between weekdays and weekends?
 
 #### Create new variable (Weekday or Weekend) based on date
-```{r echo=TRUE}
 
+```r
 data_imputed$dayType<- weekdays(data_imputed$date, abbr = TRUE)
 data_imputed$dayType<- ifelse(data_imputed$dayType %in% c("Sun","Sat"), "Weekend","Weekday")
 data_imputed$dayType<-factor(data_imputed$dayType, levels = c("Weekday","Weekend"))
@@ -196,21 +248,23 @@ data_imputed$dayType<-factor(data_imputed$dayType, levels = c("Weekday","Weekend
 
 #### Aggregate steps by interval and day type
 
-```{r echo=TRUE}
+
+```r
 dataWeekAgg<-aggregate(steps~interval+dayType,data_imputed,mean)
 ```
 
 #### Creates time series plot based on Weekday or Weekend
-```{r echo=TRUE}
 
+```r
 dataWeekAgg %>% ggplot(aes(x = interval, y = steps)) +
                  geom_line()+
                  facet_wrap(~dayType, nrow=2, ncol=1) +
                  xlab("Interval") +
                  ylab("Number of Steps") +
                  theme_bw()
-
 ```
+
+![](PA1_template_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
 
 
 As we can see from the graph above, ctivity on the weekday has the greatest peak from all steps intervals. Comparing to weekday, weekend's activities has more peaks over a hundred than weekday. 
